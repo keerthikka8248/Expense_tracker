@@ -1,11 +1,19 @@
 const express = require('express')
 const { mongoose } = require('mongoose')
 const app = express()
-const {Expense} = require('./schema.js')
+const {Expense,User} = require('./schema.js')
+
 const bodyParser = require('body-parser')
-const cors = require("cors")
+const cors = require("cors") //helps in cross origin data request,response
 app.use(bodyParser.json())
 app.use(cors())
+//|^ -- middlewares
+//websocket
+//jwd token
+//mbc pattern
+//otp verification
+//payment gateway
+
 
 //Mongoose -- DB connection -- Schema Declaration -- Queries Execution
 const port = process.env.PORT || 8000
@@ -22,6 +30,97 @@ async function connectiontoDB(){
     }
 }
 connectiontoDB()
+
+app.get('/',function(request,response){
+    response.send("Welcome To Expense Tracker")
+})
+
+app.post('/addUser', async function(request,response){
+    try{
+        await User.create({
+            "username":request.body.username,
+            "emailid":request.body.emailid,
+            "password":request.body.password
+        })
+        response.status(201).json({"status":"success","msg":"user added"})
+        console.log(request.body)
+    }
+    catch(error){
+        response.status(500).json({"status":"failure","msg":"couldn't add user","Error": error})
+    }
+    
+})
+
+app.get('/findUser', async function(request,response){
+    try{
+        const Userdata = await User.find()
+        response.status(200).json(Userdata)
+    }
+    catch(error){
+        response.status(500).json({
+            "status":"failure",
+            "msg":"couldn't find user",
+            "Error":error
+        })
+    }
+})
+
+app.delete('/deleteUser/:id',async function(request,response){
+    const userId = User.findById(request.params.id)
+    if(userId){
+        try{
+            await User.findByIdAndDelete(request.params.id)
+            response.status(200).json({
+            "status":"Success",
+            "msg":"User deleted"
+        })
+        }
+        catch(error){
+            response.status(500).json({
+                "status":"Failure",
+                "msg":"Couldn't delete user",
+                "Error":error
+        })
+        
+        }
+    }
+    else{
+        response.status(404).json({
+            "status":"Failure",
+            "msg":"User not found"
+    })
+    }
+})
+
+
+app.patch('/editUser/:id',async function(request,response){
+    const Userid = await User.findById(request.params.id)
+    if(Userid){
+        try{
+            await Userid.updateOne({
+                "username":request.body.username,
+                "emailid":request.body.emailid,
+                "password":request.body.password
+            })
+            response.status(200).json({
+                "status":"success",
+                "msg":"User updated"
+            })
+        }
+        catch(error){
+            response.status(500).json({
+                "status":"Failure",
+                "msg":"Couldn't update user due to server error",
+                "Error":error
+        })
+        }
+        
+    }
+    else{
+        response.status(404).json({"status":"Failure",
+        "msg":"couldn't found id"})
+    }
+})
 
 app.post('/addExpense', async function(request,response){
     try{
